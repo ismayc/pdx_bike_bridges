@@ -65,7 +65,7 @@ haw_wide <- haw %>% spread(key = bound, value = comptage) %>%
 
 Lots of different options are explained [here](https://rstudio.github.io/dygraphs/).
 
-```{r}
+```{r plot_til}
 til_ts <- with(til_wide, xts(cbind(east, west), date))
 dygraph(til_ts, main = "Tilikum Crossing", ylab = "Comptage") %>% 
   dySeries("east", label = "Eastbound") %>%
@@ -80,7 +80,7 @@ dygraph(til_ts, main = "Tilikum Crossing", ylab = "Comptage") %>%
 
 ### Using `dygraph` in `xts` format
 
-```{r}
+```{r plot_haw}
 haw_ts <- with(haw_wide, xts(cbind(east, west), date))
 dygraph(haw_ts, main = "Hawthorne", ylab = "Comptage") %>% 
   dySeries("east", label = "Eastbound") %>%

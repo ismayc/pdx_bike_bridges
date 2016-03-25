@@ -1,0 +1,90 @@
+---
+title: "Bridges JSON Analysis"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+
+```{r setup, include=FALSE}
+rm(list = ls(all = TRUE))
+
+pkg <- c("dplyr", "DT", "jsonlite", "lubridate", 
+  "xts", "dygraphs", "tidyr")
+
+new.pkg <- pkg[!(pkg %in% installed.packages())]
+
+if (length(new.pkg)) {
+  install.packages(new.pkg, repos = "http://cran.rstudio.com")
+}
+
+lapply(pkg, library, character.only = TRUE)
+```
+
+```{r no_sci_not, include=FALSE}
+options(scipen = 100)
+```
+
+## Load data
+
+```{r load_data}
+haw_e <- fromJSON("data/hawthorne eastbound.json") %>%
+  mutate(bound = "east")
+haw_w <- fromJSON("data/hawthorne westbound.json")%>%
+  mutate(bound = "west")
+til_e <- fromJSON("data/tilikum eastbound.json") %>%
+  mutate(bound = "east")
+til_w <- fromJSON("data/tilikum westbound.json") %>%
+  mutate(bound = "west")
+```
+
+## Merge data for each bridge
+
+```{r merge_ew}
+haw <- bind_rows(haw_e, haw_w) %>%
+  mutate(date = ymd_hms(date, tz = "America/Los_Angeles"))
+til <- bind_rows(til_e, til_w) %>%
+  mutate(date = ymd_hms(date, tz = "America/Los_Angeles"))
+```
+
+## Prepare data for plots
+
+```{r widen}
+til_wide <- til %>% spread(key = bound, value = comptage) %>%
+  select(-timestamp) %>%
+  mutate(day_of_week = wday(date, label = TRUE))
+haw_wide <- haw %>% spread(key = bound, value = comptage) %>%
+  select(-timestamp) %>%
+  mutate(day_of_week = wday(date, label = TRUE))
+```
+
+## Output Tilikim time series 
+
+### Using `dygraph` in `xts` format
+
+Lots of different options are explained [here](https://rstudio.github.io/dygraphs/).
+
+```{r}
+til_ts <- with(til_wide, xts(cbind(east, west), date))
+dygraph(til_ts, main = "Tilikum Crossing", ylab = "Comptage") %>% 
+  dySeries("east", label = "Eastbound") %>%
+  dySeries("west", label = "Westbound") %>%
+  dyOptions(fillGraph = TRUE, fillAlpha = 0.4) %>%
+  dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+  dyLegend(width = 500)  %>%
+  dyRangeSelector()
+```
+
+## Output Hawthorne time series 
+
+### Using `dygraph` in `xts` format
+
+```{r}
+haw_ts <- with(haw_wide, xts(cbind(east, west), date))
+dygraph(haw_ts, main = "Hawthorne", ylab = "Comptage") %>% 
+  dySeries("east", label = "Eastbound") %>%
+  dySeries("west", label = "Westbound") %>%
+  dyLegend(width = 500)  %>%
+  dyRangeSelector()
+```
